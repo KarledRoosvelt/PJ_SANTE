@@ -1,0 +1,2 @@
+total,valid_age_pct,valid_gender_pct,valid_bp_pct,valid_hr_pct,valid_temp_pct,valid_satisfaction_pct,valid_ai_confidence_pct
+5000,100.0,100.0,100.0,99.98,0.0,100.0,100.0

@@ -1,0 +1,2 @@
+total_records,age_completeness_pct,gender_completeness_pct,bp_completeness_pct,hr_completeness_pct,temp_completeness_pct,satisfaction_completeness_pct,ai_confidence_completeness_pct
+5000,100.0,100.0,100.0,100.0,100.0,100.0,100.0
