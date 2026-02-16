@@ -3,25 +3,46 @@ import pandas as pd
 import configparser
 import logging
 from sqlalchemy import create_engine
+import os
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class DataProfiler:
     def __init__(self, config_file='../config/database.ini'):
-        self.config = self.load_config(config_file)
+        self.config_file = config_file
+        self.config = None
         self.engine = self.create_engine()
-        
+
     def load_config(self, filename):
+        path = Path(filename).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"database.ini introuvable: {path}")
+
         config = configparser.ConfigParser()
-        config.read(filename)
+        config.read(path)
+
+        if 'postgresql' not in config:
+            raise KeyError(
+                f"Section [postgresql] introuvable dans {path}. "
+                f"Sections disponibles: {config.sections()}"
+            )
         return config['postgresql']
-    
+
     def create_engine(self):
-        connection_string = f"postgresql://{self.config['user']}:{self.config['password']}@{self.config['host']}:{self.config['port']}/{self.config['database']}"
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            return create_engine(db_url, connect_args={"sslmode": "require"})
+
+        self.config = self.load_config(self.config_file)
+        connection_string = (
+            f"postgresql://{self.config['user']}:{self.config['password']}"
+            f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
+        )
         return create_engine(connection_string)
     
-    def profile_patients_demographics(self):
+    def profile_patients_demographics(self): ##statistiques selon le sexe
         """Profil démographique des patients"""
         query = """
         SELECT 
@@ -38,7 +59,7 @@ class DataProfiler:
         """
         return pd.read_sql(query, self.engine)
     
-    def profile_diagnosis_distribution(self):
+    def profile_diagnosis_distribution(self): ##statistique selon la maladie
         """Distribution des diagnostics"""
         query = """
         SELECT 
@@ -55,7 +76,7 @@ class DataProfiler:
         """
         return pd.read_sql(query, self.engine)
     
-    def profile_hospital_performance(self):
+    def profile_hospital_performance(self): ##statistique selon les hopitaux
         """Performance par hôpital"""
         query = """
         SELECT 
@@ -72,7 +93,7 @@ class DataProfiler:
         """
         return pd.read_sql(query, self.engine)
     
-    def profile_medication_effectiveness(self):
+    def profile_medication_effectiveness(self): ##statistique selon les medicament
         """Efficacité des médicaments"""
         query = """
         SELECT 
@@ -88,7 +109,7 @@ class DataProfiler:
         """
         return pd.read_sql(query, self.engine)
     
-    def profile_doctor_workload(self):
+    def profile_doctor_workload(self):  ##statistique des docteur
         """Charge de travail des médecins"""
         query = """
         SELECT 
@@ -106,7 +127,7 @@ class DataProfiler:
         """
         return pd.read_sql(query, self.engine)
     
-    def profile_age_groups(self):
+    def profile_age_groups(self):   ## statistique selon age
         """Analyse par groupes d'âge"""
         query = """
         SELECT 
