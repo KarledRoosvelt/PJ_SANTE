@@ -4,33 +4,49 @@ import configparser
 import logging
 from datetime import datetime
 import os
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class DataQualityAnalyzer:
     def __init__(self, config_file='../config/database.ini'):
-        self.config = self.load_config(config_file)
+        self.config_file = config_file
+        self.config = None
         self.conn = None
-        
+
     def load_config(self, filename):
+        path = Path(filename).resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"database.ini introuvable: {path}")
+
         config = configparser.ConfigParser()
-        config.read(filename)
+        config.read(path)
+
+        if 'postgresql' not in config:
+            raise KeyError(
+                f"Section [postgresql] introuvable dans {path}. "
+                f"Sections disponibles: {config.sections()}"
+            )
         return config['postgresql']
-    
+
     def connect(self):
         db_url = os.getenv("DATABASE_URL")
+
         if db_url:
+            # Render / cloud
             self.conn = psycopg2.connect(db_url, sslmode="require")
-        else:
-            # fallback local: database.ini
-            self.conn = psycopg2.connect(
-                host=self.config['host'],
-                port=self.config['port'],
-                database=self.config['database'],
-                user=self.config['user'],
-                password=self.config['password']
-            )
+            return
+
+        # Local
+        self.config = self.load_config(self.config_file)
+        self.conn = psycopg2.connect(
+            host=self.config['host'],
+            port=self.config['port'],
+            database=self.config['database'],
+            user=self.config['user'],
+            password=self.config['password']
+        )
     
     def close(self):
         if self.conn:
