@@ -3,6 +3,7 @@ import pandas as pd
 import configparser
 import logging
 from datetime import datetime
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -18,13 +19,18 @@ class DataQualityAnalyzer:
         return config['postgresql']
     
     def connect(self):
-        self.conn = psycopg2.connect(
-            host=self.config['host'],
-            port=self.config['port'],
-            database=self.config['database'],
-            user=self.config['user'],
-            password=self.config['password']
-        )
+        db_url = os.getenv("DATABASE_URL")
+        if db_url:
+            self.conn = psycopg2.connect(db_url, sslmode="require")
+        else:
+            # fallback local: database.ini
+            self.conn = psycopg2.connect(
+                host=self.config['host'],
+                port=self.config['port'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password']
+            )
     
     def close(self):
         if self.conn:

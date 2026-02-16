@@ -7,3 +7,6 @@ seaborn
 jupyter
 python-dotenv
 configparser
+streamlit
+plotly
+statsmodels
