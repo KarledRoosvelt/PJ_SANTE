@@ -1,17 +1,20 @@
-import psycopg2
+import os
 import pandas as pd
 import configparser
 import logging
 from sqlalchemy import create_engine
-import os
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
 class DataProfiler:
-    def __init__(self, config_file='../config/database.ini'):
-        self.config_file = config_file
+    def __init__(self, config_file="config/database.ini"):
+        # ✅ chemin robuste vers la racine du projet
+        base_dir = Path(__file__).resolve().parent.parent  # .../AI_in_HealthCare_Dataset
+        self.config_file = str((base_dir / config_file).resolve())
+
         self.config = None
         self.engine = self.create_engine()
 
@@ -33,16 +36,20 @@ class DataProfiler:
     def create_engine(self):
         db_url = os.getenv("DATABASE_URL")
         if db_url:
+            # ✅ Render / Cloud
             return create_engine(db_url, connect_args={"sslmode": "require"})
 
+        # ✅ Local
         self.config = self.load_config(self.config_file)
         connection_string = (
             f"postgresql://{self.config['user']}:{self.config['password']}"
             f"@{self.config['host']}:{self.config['port']}/{self.config['database']}"
         )
         return create_engine(connection_string)
-    
-    def profile_patients_demographics(self): ##statistiques selon le sexe
+
+    # ------------------ TES REQUÊTES (inchangées) ------------------
+
+    def profile_patients_demographics(self):
         """Profil démographique des patients"""
         query = """
         SELECT 
@@ -58,8 +65,8 @@ class DataProfiler:
         ORDER BY patient_count DESC;
         """
         return pd.read_sql(query, self.engine)
-    
-    def profile_diagnosis_distribution(self): ##statistique selon la maladie
+
+    def profile_diagnosis_distribution(self):
         """Distribution des diagnostics"""
         query = """
         SELECT 
@@ -75,8 +82,8 @@ class DataProfiler:
         ORDER BY patient_count DESC;
         """
         return pd.read_sql(query, self.engine)
-    
-    def profile_hospital_performance(self): ##statistique selon les hopitaux
+
+    def profile_hospital_performance(self):
         """Performance par hôpital"""
         query = """
         SELECT 
@@ -92,8 +99,8 @@ class DataProfiler:
         ORDER BY patient_count DESC;
         """
         return pd.read_sql(query, self.engine)
-    
-    def profile_medication_effectiveness(self): ##statistique selon les medicament
+
+    def profile_medication_effectiveness(self):
         """Efficacité des médicaments"""
         query = """
         SELECT 
@@ -108,8 +115,8 @@ class DataProfiler:
         ORDER BY prescriptions DESC;
         """
         return pd.read_sql(query, self.engine)
-    
-    def profile_doctor_workload(self):  ##statistique des docteur
+
+    def profile_doctor_workload(self):
         """Charge de travail des médecins"""
         query = """
         SELECT 
@@ -126,8 +133,8 @@ class DataProfiler:
         ORDER BY patient_count DESC;
         """
         return pd.read_sql(query, self.engine)
-    
-    def profile_age_groups(self):   ## statistique selon age
+
+    def profile_age_groups(self):
         """Analyse par groupes d'âge"""
         query = """
         SELECT 
@@ -148,7 +155,7 @@ class DataProfiler:
         ORDER BY age_group;
         """
         return pd.read_sql(query, self.engine)
-    
+
     def profile_correlations(self):
         """Corrélations entre variables"""
         query = """
@@ -162,11 +169,11 @@ class DataProfiler:
         FROM patients;
         """
         return pd.read_sql(query, self.engine)
-    
+
     def generate_full_profile(self):
         """Génère un profil complet"""
         logger.info("Génération du profil complet des données...")
-        
+
         profile = {
             'demographics': self.profile_patients_demographics(),
             'diagnosis_distribution': self.profile_diagnosis_distribution(),
@@ -176,27 +183,27 @@ class DataProfiler:
             'age_groups': self.profile_age_groups(),
             'correlations': self.profile_correlations()
         }
-        
-        # Statistiques générales
+
         with self.engine.connect() as conn:
-            total_patients = pd.read_sql("SELECT COUNT(*) FROM patients", conn).iloc[0,0]
+            total_patients = pd.read_sql("SELECT COUNT(*) FROM patients", conn).iloc[0, 0]
             profile['total_patients'] = total_patients
-        
-        logger.info("Profil généré avec succès")
+
+        logger.info("Profil généré avec succès ✅")
         return profile
+
 
 if __name__ == "__main__":
     profiler = DataProfiler()
     profile = profiler.generate_full_profile()
-    
+
     print("\n=== PROFIL DÉMOGRAPHIQUE ===")
     print(profile['demographics'])
-    
+
     print("\n=== DISTRIBUTION DES DIAGNOSTICS ===")
     print(profile['diagnosis_distribution'].head(10))
-    
+
     print("\n=== PERFORMANCE DES HÔPITAUX ===")
     print(profile['hospital_performance'])
-    
+
     print("\n=== CORRÉLATIONS ===")
     print(profile['correlations'])
