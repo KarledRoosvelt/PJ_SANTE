@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 class DataQualityAnalyzer:
     def __init__(self, config_file='config/database.ini'):
-        # ✅ indispensables pour éviter AttributeError
+        #  indispensables pour éviter AttributeError
         self.config_file = config_file
         self.conn = None
 
     def connect(self):
         """Ouvre une connexion si elle n'existe pas ou si elle est fermée."""
-        # ✅ évite AttributeError si Streamlit recharge bizarrement
+        #  évite AttributeError si Streamlit recharge bizarrement
         conn = getattr(self, "conn", None)
 
         if conn is not None and getattr(conn, "closed", 1) == 0:
@@ -88,7 +88,7 @@ class DataQualityAnalyzer:
         """
         return pd.read_sql(query, self.conn)
 
-    # ✅ IMPORTANT: pd.read_sql ne gère pas bien 2 SELECT ; on sépare en 2 méthodes
+    #  IMPORTANT: pd.read_sql ne gère pas bien 2 SELECT ; on sépare en 2 méthodes
     def analyze_duplicates_patient_id(self):
         """Doublons sur patient_id (ne devrait pas exister si patient_id est PK)"""
         self.connect()
@@ -186,7 +186,7 @@ class DataQualityAnalyzer:
     def generate_quality_report(self):
         """Génère un rapport complet de qualité des données"""
         try:
-            # ✅ connexion garantie
+            #  connexion garantie
             self.connect()
 
             report = {
@@ -195,7 +195,7 @@ class DataQualityAnalyzer:
                 'freshness': self.analyze_freshness(),
                 'consistency': self.analyze_consistency(),
                 'anomalies': self.analyze_anomalies(),
-                # ✅ doublons séparés (si tu veux les utiliser dans streamlit)
+                #  doublons séparés (si tu veux les utiliser dans streamlit)
                 'dup_patient_id': self.analyze_duplicates_patient_id(),
                 'dup_potential': self.analyze_duplicates_potential(limit=10)
             }
